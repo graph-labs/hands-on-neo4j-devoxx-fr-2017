@@ -1,5 +1,7 @@
 package net.biville.florent.devoxxfr2017;
 
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherError;
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherStatementValidator;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

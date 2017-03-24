@@ -2,6 +2,11 @@ package net.biville.florent.devoxxfr2017;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import net.biville.florent.devoxxfr2017.graph.ConnectionConfiguration;
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherQueryExecutor;
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherStatementValidator;
+import net.biville.florent.devoxxfr2017.repl.Console;
+import net.biville.florent.devoxxfr2017.repl.MultilineStatementParser;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
@@ -9,6 +14,8 @@ import org.jline.terminal.TerminalBuilder;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 public class Main {
 
@@ -47,7 +54,8 @@ public class Main {
 
     private static void validateConnection(CypherQueryExecutor queryExecutor) {
         try {
-            if (!queryExecutor.readOne("RETURN true as result", "result").asBoolean()) {
+            List<Map<String, Object>> result = queryExecutor.execute("RETURN true as result");
+            if (result.size() != 1 || !((boolean) result.get(0).get("result"))) {
                 System.err.println("Uh-oh. Something is very wrong here. Aborting.");
                 System.exit(42);
             }

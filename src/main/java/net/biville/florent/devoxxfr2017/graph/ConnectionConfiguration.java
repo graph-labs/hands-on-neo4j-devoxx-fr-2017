@@ -1,4 +1,4 @@
-package net.biville.florent.devoxxfr2017;
+package net.biville.florent.devoxxfr2017.graph;
 
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;

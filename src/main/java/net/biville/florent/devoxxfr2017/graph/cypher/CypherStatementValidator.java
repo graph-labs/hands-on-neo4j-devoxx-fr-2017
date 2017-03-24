@@ -1,5 +1,7 @@
-package net.biville.florent.devoxxfr2017;
+package net.biville.florent.devoxxfr2017.graph.cypher;
 
+import net.biville.florent.devoxxfr2017.CypherLexer;
+import net.biville.florent.devoxxfr2017.CypherParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 
