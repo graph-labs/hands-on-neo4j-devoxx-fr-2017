@@ -1,4 +1,4 @@
-package net.biville.florent.devoxxfr2017;
+package net.biville.florent.devoxxfr2017.graph.cypher;
 
 import org.antlr.v4.runtime.RecognitionException;
 

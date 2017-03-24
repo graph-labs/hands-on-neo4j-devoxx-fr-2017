@@ -1,10 +1,15 @@
 package net.biville.florent.devoxxfr2017;
 
+import net.biville.florent.devoxxfr2017.graph.ConnectionConfiguration;
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherQueryExecutor;
+import org.assertj.core.util.Maps;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.harness.junit.Neo4jRule;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,9 +27,9 @@ public class CypherQueryExecutorTest {
 
     @Test
     public void executes_Cypher_queries() {
-        Value result = executor.readOne("MATCH (n)\n RETURN COUNT(n) AS result;", "result");
+        List<Map<String, Object>> result = executor.execute("MATCH (n)\n RETURN COUNT(n) AS result;");
 
-        assertThat(result.asLong()).isEqualTo(0L);
+        assertThat(result).containsExactly(Maps.newHashMap("result", 0L));
     }
 
     private ConnectionConfiguration configuration() {

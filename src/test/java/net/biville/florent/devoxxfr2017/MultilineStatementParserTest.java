@@ -1,5 +1,6 @@
 package net.biville.florent.devoxxfr2017;
 
+import net.biville.florent.devoxxfr2017.repl.MultilineStatementParser;
 import org.jline.reader.EOFError;
 import org.jline.reader.ParsedLine;
 import org.jline.reader.Parser;

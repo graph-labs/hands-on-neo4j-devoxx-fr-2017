@@ -1,5 +1,8 @@
-package net.biville.florent.devoxxfr2017;
+package net.biville.florent.devoxxfr2017.repl;
 
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherError;
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherQueryExecutor;
+import net.biville.florent.devoxxfr2017.graph.cypher.CypherStatementValidator;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;
@@ -23,6 +26,9 @@ public class Console {
         System.out.println();
         System.out.println("Welcome to Devoxx France 2017 Hands on Neo4j!");
         System.out.println("Please make sure your Cypher statements end with a semicolon.");
+        System.out.println("First enter a username, with the command :login username"); //TODO
+        // once the username is input, create session, keep it around and start first exercise
+        // need command :show to show exercise statement
         System.out.println();
         while (true) {
             try {
@@ -30,8 +36,8 @@ public class Console {
                 statementValidator.validate(statement)
                         .map(CypherError::getMessage)
                         .forEachOrdered(System.err::println);
-                queryExecutor.readOne(statement, "result");
-            } catch (UserInterruptException e) {
+                queryExecutor.execute(statement);
+            } catch (UserInterruptException ignored) {
             } catch (EndOfFileException e) {
                 System.out.println("Goodbye!");
                 return;
