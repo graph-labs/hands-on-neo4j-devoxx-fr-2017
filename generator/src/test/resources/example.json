@@ -1,0 +1,4 @@
+[{
+  "statement":"This is a very simple exercise",
+  "queryToExecute": "MATCH (n) RETURN COUNT(n) AS result"
+}]
