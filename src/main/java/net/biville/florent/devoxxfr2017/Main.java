@@ -1,14 +1,24 @@
 package net.biville.florent.devoxxfr2017;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.jline.reader.Candidate;
+import org.jline.reader.Completer;
+import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.ParsedLine;
 import org.jline.reader.Parser;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-
-import java.io.IOException;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 
 public class Main {
 
@@ -72,8 +82,36 @@ public class Main {
     }
 
     private static LineReader terminal(Parser parser) {
+        List<String> methodTargets = Arrays.asList("MATCH", "RETURN", "COUNT");
+
+
         try {
-            return LineReaderBuilder.builder().terminal(TerminalBuilder.terminal()).parser(parser).build();
+            final AtomicInteger pos = new AtomicInteger(0);
+            final int[] start = {0};
+            return LineReaderBuilder.builder()
+                  .terminal(TerminalBuilder.terminal())
+                  .highlighter((reader, buffer) -> {
+                      int l = 0;
+                      int curr = pos.incrementAndGet();
+                      String best = null;
+                      for (String command : methodTargets) {
+                          if (buffer.startsWith(command, start[0]) && command.length() > l) {
+                              l = command.length();
+                              best = command;
+                              start[0] = pos.get();
+                          }
+                      }
+                      if (best != null) {
+                          return new AttributedStringBuilder(buffer.length())
+                                .append(best, AttributedStyle.BOLD)
+                                .append(buffer.substring(start[0], l))
+                                .style(AttributedStyle.DEFAULT.foreground(AttributedStyle.BRIGHT))
+                                .toAttributedString();
+                      }
+                      else {
+                          return new AttributedString(buffer, AttributedStyle.DEFAULT.foreground(AttributedStyle.RED));
+                      }
+                  }).parser(parser).build();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
