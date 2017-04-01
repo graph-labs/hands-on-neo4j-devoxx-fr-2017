@@ -7,6 +7,7 @@ import net.biville.florent.repl.graph.cypher.CypherQueryExecutor;
 import net.biville.florent.repl.graph.cypher.CypherStatementValidator;
 import net.biville.florent.repl.logging.ConsoleLogger;
 import org.jline.utils.AttributedStyle;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import java.util.Collection;
 
@@ -45,21 +46,29 @@ public class CypherSessionFallbackCommand implements Command {
         if (!errors.isEmpty()) {
             logger.error("An error occurred with your query. See details below:");
             errors.forEach(err -> logger.error(err.toString()));
+            return;
         }
-        else {
-            ExerciseValidation validation = session.validate(cypherQueryExecutor.execute(statement));
-            if (!validation.isSuccessful()) {
-                logger.error(validation.getReport());
-                return;
-            }
-            if (session.isCompleted()) {
-                logger.log("Congrats, you're done!!!", AttributedStyle.BOLD.background(AttributedStyle.GREEN));
-                return;
-            }
-            logger.log(validation.getReport());
-            logger.log("Now moving on to next exercise! See instructions below...");
-            logger.log(session.getCurrentExercise().getStatement());
+        try {
+            validate(session, statement);
+        } catch (ClientException executionError) {
+            logger.error("The query execution failed. See reason below:");
+            logger.error(executionError.getMessage());
         }
+    }
+
+    private void validate(TraineeSession session, String statement) {
+        ExerciseValidation validation = session.validate(cypherQueryExecutor.execute(statement));
+        if (!validation.isSuccessful()) {
+            logger.error(validation.getReport());
+            return;
+        }
+        if (session.isCompleted()) {
+            logger.log("Congrats, you're done!!!", AttributedStyle.BOLD.background(AttributedStyle.GREEN));
+            return;
+        }
+        logger.log(validation.getReport());
+        logger.log("Now moving on to next exercise! See instructions below...");
+        logger.log(session.getCurrentExercise().getStatement());
     }
 
 }
