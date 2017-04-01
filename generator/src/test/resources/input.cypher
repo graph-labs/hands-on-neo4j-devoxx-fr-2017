@@ -1,1 +1,0 @@
-CREATE (n:Node) RETURN n

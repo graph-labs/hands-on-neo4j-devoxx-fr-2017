@@ -18,8 +18,11 @@ public class ExerciseParserTest {
         Collection<JsonExercise> exercises = parser.apply(classpathFile("/example.json"));
 
         assertThat(exercises)
-                .extracting(JsonExercise::getStatement, JsonExercise::getQueryToExecute)
-                .containsExactly(tuple("This is a very simple exercise", "MATCH (n) RETURN COUNT(n) AS result"));
+                .extracting(JsonExercise::getInstructions, JsonExercise::getSolutionQuery, JsonExercise::getWriteQuery)
+                .containsExactly(
+                        tuple("This is a very simple exercise", "MATCH (n) RETURN COUNT(n) AS result", null),
+                        tuple("This is a write exercise", "MATCH (n:Foo {bar:'baz'}) RETURN COUNT(n) AS result", "CREATE (n:Foo {bar:'baz'})")
+                );
     }
 
     private File classpathFile(String name) throws URISyntaxException {

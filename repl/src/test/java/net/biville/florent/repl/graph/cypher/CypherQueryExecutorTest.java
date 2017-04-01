@@ -5,6 +5,7 @@ import org.assertj.core.util.Maps;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.harness.junit.Neo4jRule;
 
 import java.util.List;
@@ -26,7 +27,9 @@ public class CypherQueryExecutorTest {
 
     @Test
     public void executes_Cypher_queries() {
-        List<Map<String, Object>> result = executor.execute("MATCH (n)\n RETURN COUNT(n) AS result;");
+        List<Map<String, Object>> result = executor.rollback(tx -> {
+            return tx.run("MATCH (n)\n RETURN COUNT(n) AS result;").list(Record::asMap);
+        });
 
         assertThat(result).containsExactly(Maps.newHashMap("result", 0L));
     }

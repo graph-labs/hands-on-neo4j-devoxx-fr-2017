@@ -1,4 +1,11 @@
-[{
-  "statement":"This is a very simple exercise",
-  "queryToExecute": "MATCH (n) RETURN COUNT(n) AS result"
-}]
+[
+  {
+    "instructions": "This is a very simple exercise",
+    "solutionQuery": "MATCH (n) RETURN COUNT(n) AS result"
+  },
+  {
+    "instructions": "This is a write exercise",
+    "solutionQuery": "MATCH (n:Foo {bar:'baz'}) RETURN COUNT(n) AS result",
+    "writeQuery": "CREATE (n:Foo {bar:'baz'})"
+  }
+]

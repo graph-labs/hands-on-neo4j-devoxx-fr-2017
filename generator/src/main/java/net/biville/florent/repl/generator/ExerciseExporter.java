@@ -8,6 +8,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -16,9 +17,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
 
 public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercise>> {
 
@@ -45,26 +50,49 @@ public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercis
     }
 
     private Collection<String> cypherQueries(Driver driver, Collection<JsonExercise> jsonExercises) {
-        Collection<String> cypherQueries = new ArrayList<>();
-        jsonExercises.forEach(exercise -> {
-            try (Session session = driver.session()) {
-                byte[] expectedResult = serialize(session.run(exercise.getQueryToExecute()));
-                cypherQueries.add(insert(exercise.getStatement(), expectedResult));
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
-        });
+        Collection<String> queries = jsonExercises.stream()
+                .map(exercise -> tryConvertQuery(driver, exercise))
+                .collect(Collectors.toList());
 
+        Collection<String> result = new ArrayList<>(queries);
         if (jsonExercises.size() > 1) {
-            cypherQueries.add(linkQuery());
+            result.add(linkQuery());
         }
-        return cypherQueries;
+        return result;
     }
 
-    private String insert(String statement, byte[] serializedResult) {
-        return String.format("MERGE (e:Exercise {statement: '%s', result: '%s'})", statement, encoder.encodeToString(serializedResult));
+    private String tryConvertQuery(Driver driver, JsonExercise exercise) {
+        try (Session session = driver.session(); Transaction tx = session.beginTransaction()) {
+            String query = convertToQuery(tx, exercise);
+            tx.failure();// always roll back, so nothing is persisted in remote database
+            return query;
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
+    private String convertToQuery(Transaction transaction, JsonExercise exercise) throws IOException {
+        if (exercise.requiresWrite()) {
+            transaction.run(exercise.getWriteQuery());
+            byte[] expectedResult = serialize(transaction.run(exercise.getSolutionQuery()));
+            return insertWriteExercise(exercise, expectedResult);
+        }
+
+        byte[] expectedResult = serialize(transaction.run(exercise.getSolutionQuery()));
+        return insertReadExercise(exercise.getInstructions(), expectedResult);
+    }
+
+    private String insertWriteExercise(JsonExercise exercise, byte[] serializedResult) {
+        return format(
+                "MERGE (e:Exercise {instructions: '%s', validationQuery: '%s', result: '%s'})",
+                escape(exercise.getInstructions()),
+                escape(exercise.getSolutionQuery()),
+                encoder.encodeToString(serializedResult));
+    }
+
+    private String insertReadExercise(String statement, byte[] serializedResult) {
+        return format("MERGE (e:Exercise {instructions: '%s', result: '%s'})", escape(statement), encoder.encodeToString(serializedResult));
+    }
 
     private String linkQuery() {
         return "MATCH (e:Exercise) " +
@@ -75,11 +103,26 @@ public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercis
                 "FOREACH (second IN [exercises[i+1]] | MERGE (first)-[:NEXT]->(second))))";
     }
 
+
     private byte[] serialize(StatementResult result) throws IOException {
-        List<Map<String, Object>> rows = result.list(Record::asMap);
+        List<Map<String, Object>> rows = makeSerializable(result.list(Record::asMap));
         try (Output output = new Output(new ByteArrayOutputStream())) {
             kryo.writeObject(output, rows);
             return output.toBytes();
         }
+    }
+
+    private List<Map<String, Object>> makeSerializable(List<Map<String, Object>> rows) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> entries = new HashMap<>();
+            row.entrySet().forEach(e -> entries.put(e.getKey(), e.getValue()));
+            result.add(entries);
+        }
+        return result;
+    }
+
+    private static String escape(String text) {
+        return text.replaceAll("'", "\\\\'");
     }
 }

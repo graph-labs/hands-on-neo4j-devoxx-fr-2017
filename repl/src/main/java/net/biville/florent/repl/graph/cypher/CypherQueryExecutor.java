@@ -3,16 +3,13 @@ package net.biville.florent.repl.graph.cypher;
 import net.biville.florent.repl.graph.ReplConfiguration;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptyMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class CypherQueryExecutor {
 
@@ -22,24 +19,45 @@ public class CypherQueryExecutor {
         this.configuration = configuration;
     }
 
-    public void executeAll(String... queries) {
+    public List<Map<String, Object>> commit(Function<Transaction, List<Map<String, Object>>> callback) {
         try (Driver driver = GraphDatabase.driver(configuration.getBoltUri(), configuration.getAuthToken());
-             Session session = driver.session()) {
+             Session session = driver.session();
+             Transaction tx = session.beginTransaction()) {
 
-            stream(queries).forEachOrdered(session::run);
+            List<Map<String, Object>> result = callback.apply(tx);
+            tx.success();
+            return result;
         }
     }
 
-    public List<Map<String, Object>> execute(String query) {
-        return execute(query, emptyMap());
+    public void commit(Consumer<Transaction> callback) {
+        try (Driver driver = GraphDatabase.driver(configuration.getBoltUri(), configuration.getAuthToken());
+             Session session = driver.session();
+             Transaction tx = session.beginTransaction()) {
+
+            callback.accept(tx);
+            tx.success();
+        }
     }
 
-    public List<Map<String, Object>> execute(String query, Map<String, Object> parameters) {
+    public void rollback(Consumer<Transaction> callback) {
         try (Driver driver = GraphDatabase.driver(configuration.getBoltUri(), configuration.getAuthToken());
-             Session session = driver.session()) {
+             Session session = driver.session();
+             Transaction tx = session.beginTransaction()) {
 
-            StatementResult result = session.run(query, parameters);
-            return result.list(Record::asMap);
+            callback.accept(tx);
+            tx.failure();
+        }
+    }
+
+    public List<Map<String, Object>> rollback(Function<Transaction, List<Map<String, Object>>> callback) {
+        try (Driver driver = GraphDatabase.driver(configuration.getBoltUri(), configuration.getAuthToken());
+             Session session = driver.session();
+             Transaction tx = session.beginTransaction()) {
+
+            List<Map<String, Object>> result = callback.apply(tx);
+            tx.failure();
+            return result;
         }
     }
 }

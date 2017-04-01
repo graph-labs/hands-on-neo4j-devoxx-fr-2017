@@ -38,8 +38,11 @@ public class Main {
             return;
         }
 
-        Collection<JsonExercise> exercises = new ExerciseParser().apply(main.exerciseDefinition);
+        System.out.println("A word of warning:");
+        System.out.println("Please make sure the configured database contains only the required data for the exercises.");
+        System.out.println("In the end, the database content relied upon by the generator must be exactly the same as the one in user databases.");
 
+        Collection<JsonExercise> exercises = new ExerciseParser().apply(main.exerciseDefinition);
         new ExerciseExporter(main.boltUri, authTokens(main.username, main.password)).accept(main.outputFile, exercises);
     }
 

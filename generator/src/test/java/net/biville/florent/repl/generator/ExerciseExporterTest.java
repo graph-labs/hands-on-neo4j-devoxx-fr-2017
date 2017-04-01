@@ -53,9 +53,9 @@ public class ExerciseExporterTest {
     public void exports_single_exercise() throws IOException {
         exporter.accept(dump, singletonList(exercise("Crazy query!", "MATCH (n) RETURN COUNT(n) AS count")));
 
-        String expectedBase64 = "AQEBAGphdmEudXRpbC5Db2xsZWN0aW9ucyRTaW5nbGV0b25NYfABAwFjb3Vu9AkA";
+        String expectedBase64 = "AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAWNvdW70CQA=";
         assertThat(dump).hasContent(
-                String.format("MERGE (e:Exercise {statement: 'Crazy query!', result: '%s'})", expectedBase64)
+                String.format("MERGE (e:Exercise {instructions: 'Crazy query!', result: '%s'})", expectedBase64)
         );
         assertThatDeserializedResult(expectedBase64, result -> {
             assertThat(result).hasSize(1);
@@ -65,14 +65,28 @@ public class ExerciseExporterTest {
     }
 
     @Test
+    public void exports_write_exercises() {
+        exporter.accept(dump, singletonList(exercise(
+                "Create a node Person whose name is foobar",
+                "MATCH (n:Person {name:'foobar'}) RETURN n.name",
+                "CREATE (:Person {name:'foobar'})")));
+
+        assertThat(dump).hasContent("MERGE (e:Exercise {instructions: 'Create a node Person whose name is foobar', validationQuery: 'MATCH (n:Person {name:\\'foobar\\'}) RETURN n.name', result: 'AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAW4ubmFt5QMBZm9vYmHy'})");
+        try (Driver driver = GraphDatabase.driver(graphDb.boltURI(), config()); Session session = driver.session()) {
+            StatementResult result = session.run("MATCH (n:Person {name:'foobar'}) RETURN n.name");
+            assertThat(result.list()).isEmpty(); //rollbacks against remote DB
+        }
+    }
+
+    @Test
     public void exports_several_exercises() {
         exporter.accept(dump, asList(
                 exercise("foo", "MATCH (n:Foo) RETURN COUNT(n) AS foo"),
                 exercise("bar", "MATCH (n:Bar) RETURN COUNT(n) AS bar")));
 
         assertThat(dump).hasContent(
-                "MERGE (e:Exercise {statement: 'foo', result: 'AQEBAGphdmEudXRpbC5Db2xsZWN0aW9ucyRTaW5nbGV0b25NYfABAwFmb+8JAA=='})\n" +
-                "MERGE (e:Exercise {statement: 'bar', result: 'AQEBAGphdmEudXRpbC5Db2xsZWN0aW9ucyRTaW5nbGV0b25NYfABAwFiYfIJAA=='})\n" +
+                "MERGE (e:Exercise {instructions: 'foo', result: 'AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAWZv7wkA'})\n" +
+                "MERGE (e:Exercise {instructions: 'bar', result: 'AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAWJh8gkA'})\n" +
                 "MATCH (e:Exercise) WITH e ORDER BY ID(e) WITH COLLECT(e) AS exercises FOREACH (i IN RANGE(0, length(exercises)-2) | FOREACH (first IN [exercises[i]] | FOREACH (second IN [exercises[i+1]] | MERGE (first)-[:NEXT]->(second))))");
     }
 
@@ -81,7 +95,7 @@ public class ExerciseExporterTest {
         exporter.accept(dump, asList(
                 exercise("foo", "MATCH (n:Foo) RETURN COUNT(n) AS foo_count"),
                 exercise("bar", "MATCH (n:Bar) RETURN COUNT(n) AS bar_count"),
-                exercise("baz", "MATCH (n:Baz) RETURN COUNT(n) AS baz_count")));
+                exercise("baz", "MATCH (n:Baz) RETURN COUNT(n) AS baz_count", "CREATE (:Baz {name:'meh'})")));
 
         lines(dump.toPath(), UTF_8).forEachOrdered(line -> {
             try (Driver driver = GraphDatabase.driver(graphDb.boltURI(), config()); Session session = driver.session()) {
@@ -92,9 +106,11 @@ public class ExerciseExporterTest {
         try (Driver driver = GraphDatabase.driver(graphDb.boltURI(), config()); Session session = driver.session()) {
             StatementResult result = session.run(
                     "MATCH p=(e1:Exercise)-[:NEXT*]->(e2:Exercise) WITH p ORDER BY LENGTH(p) DESC LIMIT 1 " +
-                            "RETURN EXTRACT(exercise IN NODES(p) | exercise.statement) AS statements");
-
-            assertThat(result.single().get("statements").asList(Value::asString)).containsExactly("foo", "bar", "baz");
+                            "RETURN EXTRACT(exercise IN NODES(p) | exercise.instructions) AS instructions");
+            assertThat(result.single().get("instructions").asList(Value::asString)).containsExactly("foo", "bar", "baz");
+            result = session.run(
+                    "MATCH (e:Exercise) WHERE EXISTS(e.validationQuery) RETURN e.instructions AS instruction");
+            assertThat(result.single().get("instruction").asString()).isEqualTo("baz");
         }
     }
 
@@ -107,10 +123,15 @@ public class ExerciseExporterTest {
         }
     }
 
-    private JsonExercise exercise(String statement, String query) {
+    private JsonExercise exercise(String instructions, String solutionQuery) {
+        return exercise(instructions, solutionQuery, null);
+    }
+
+    private JsonExercise exercise(String instructions, String solutionQuery, String writeQuery) {
         JsonExercise exercise = new JsonExercise();
-        exercise.setStatement(statement);
-        exercise.setQueryToExecute(query);
+        exercise.setInstructions(instructions);
+        exercise.setSolutionQuery(solutionQuery);
+        exercise.setWriteQuery(writeQuery);
         return exercise;
     }
 

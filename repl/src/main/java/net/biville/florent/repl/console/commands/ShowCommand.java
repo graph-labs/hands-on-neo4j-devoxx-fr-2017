@@ -24,7 +24,7 @@ public class ShowCommand implements Command {
 
     @Override
     public void accept(TraineeSession session, String ignored) {
-        logger.log(session.getCurrentExercise().getStatement(), AttributedStyle.DEFAULT.italic());
+        logger.log(session.getCurrentExercise().getInstructions(), AttributedStyle.DEFAULT.italic());
     }
 
     @Override

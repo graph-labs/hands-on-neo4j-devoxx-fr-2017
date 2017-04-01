@@ -25,6 +25,6 @@ public class ResetProgressionCommand implements Command {
     public void accept(TraineeSession traineeSession, String ignored) {
         traineeSession.reset();
         logger.log("Progression reset! Current exercise is now:");
-        logger.log(traineeSession.getCurrentExercise().getStatement());
+        logger.log(traineeSession.getCurrentExercise().getInstructions());
     }
 }

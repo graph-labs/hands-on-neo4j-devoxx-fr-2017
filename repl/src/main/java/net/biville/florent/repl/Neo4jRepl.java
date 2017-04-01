@@ -16,6 +16,7 @@ import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
 import org.jline.terminal.TerminalBuilder;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import java.io.IOException;
@@ -52,7 +53,9 @@ public class Neo4jRepl implements Supplier<Console> {
 
     private static void validateConnection(CypherQueryExecutor queryExecutor) {
         try {
-            List<Map<String, Object>> result = queryExecutor.execute("RETURN true as result");
+            List<Map<String, Object>> result = queryExecutor.rollback(tx -> {
+                return tx.run("RETURN true as result").list(Record::asMap);
+            });
             if (result.size() != 1 || !((boolean) result.get(0).get("result"))) {
                 System.err.println("Uh-oh. Something is very wrong here. Aborting.");
                 System.exit(42);

@@ -24,7 +24,7 @@ public class TraineeSession {
     public ExerciseValidation validate(List<Map<String, Object>> actualResult) {
         ExerciseValidation validation = validator.validate(actualResult, getCurrentExercise());
         if (validation.isSuccessful()) {
-            completed = !repository.moveToNext();
+            completed = !repository.moveToNextExercise();
         }
         return validation;
     }

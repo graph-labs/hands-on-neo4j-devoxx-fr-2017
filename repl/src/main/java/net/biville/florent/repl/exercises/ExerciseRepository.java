@@ -1,15 +1,17 @@
 package net.biville.florent.repl.exercises;
 
 import net.biville.florent.repl.graph.cypher.CypherQueryExecutor;
+import org.neo4j.driver.v1.Record;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ExerciseRepository {
 
@@ -22,9 +24,18 @@ public class ExerciseRepository {
     }
 
     public void importExercises(InputStream dataset) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(dataset, StandardCharsets.UTF_8))) {
-            reader.lines().forEachOrdered(executor::execute);
-            initializeSession();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(dataset, UTF_8))) {
+            executor.commit(tx -> {
+                reader.lines().forEachOrdered(tx::run);
+            });
+            executor.commit(tx -> {
+                tx.run("MERGE (s:TraineeSession) ON CREATE SET s.temp = true");
+                tx.run("MATCH (e:Exercise) WITH e ORDER BY ID(e) LIMIT 1 " +
+                        "MATCH (s:TraineeSession {temp:true}) " +
+                        "CREATE (s)-[:CURRENTLY_AT]->(e) " +
+                        "WITH s " +
+                        "REMOVE s.temp");
+            });
         }
         catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -32,12 +43,11 @@ public class ExerciseRepository {
     }
 
     public Exercise findCurrentExercise() {
-        String query =
-                "MATCH (:TraineeSession)-[:CURRENTLY_AT]->(e:Exercise) " +
-                "RETURN e.statement AS statement, e.result AS result";
 
-        List<Map<String, Object>> rows = executor.execute(
-                query);
+        List<Map<String, Object>> rows = executor.rollback(tx -> {
+            return tx.run("MATCH (:TraineeSession)-[:CURRENTLY_AT]->(e:Exercise) " +
+                    "RETURN e.instructions AS instructions, e.result AS result, e.validationQuery AS validationQuery").list(Record::asMap);
+        });
 
         int count = rows.size();
         if (count != 1) {
@@ -45,36 +55,33 @@ public class ExerciseRepository {
         }
 
         Map<String, Object> row = rows.iterator().next();
+        Object validationQuery = row.get("validationQuery");
         return new Exercise(
-            row.get("statement").toString(),
-            decoder.decode(row.get("result").toString())
+                row.get("instructions").toString(),
+                validationQuery == null ? null : validationQuery.toString(),
+                decoder.decode(row.get("result").toString())
         );
     }
 
-    public boolean moveToNext() {
+    public boolean moveToNextExercise() {
         String query =
                 "MATCH (t:TraineeSession)-[c:CURRENTLY_AT]->(:Exercise)-[:NEXT]->(e:Exercise) " +
-                "DELETE c " +
-                "CREATE (t)-[:CURRENTLY_AT]->(e) " +
-                "RETURN true";
+                        "DELETE c " +
+                        "CREATE (t)-[:CURRENTLY_AT]->(e) " +
+                        "RETURN true";
 
-        return !executor.execute(
-                query).isEmpty();
-    }
-
-    private void initializeSession() {
-        executor.executeAll("MERGE (s:TraineeSession) ON CREATE SET s.temp = true",
-                "MATCH (e:Exercise) WITH e ORDER BY ID(e) LIMIT 1 " +
-                "MATCH (s:TraineeSession {temp:true}) " +
-                "CREATE (s)-[:CURRENTLY_AT]->(e) " +
-                "WITH s " +
-                "REMOVE s.temp");
+        return !executor.commit(tx -> {
+            return tx.run(query).list(Record::asMap);
+        }).isEmpty();
     }
 
     public void resetProgression() {
-        executor.execute("MATCH (s:TraineeSession)-[r:CURRENTLY_AT]->(current:Exercise), (first:Exercise)" +
-                "WHERE NOT((:Exercise)-[:NEXT]->(first)) AND current <> first " +
-                "DELETE r " +
-                "CREATE (s)-[:CURRENTLY_AT]->(first)");
+        executor.commit(tx -> {
+            tx.run("MATCH (s:TraineeSession)-[r:CURRENTLY_AT]->(current:Exercise), (first:Exercise)" +
+                    "WHERE NOT((:Exercise)-[:NEXT]->(first)) AND current <> first " +
+                    "DELETE r " +
+                    "CREATE (s)-[:CURRENTLY_AT]->(first)");
+        });
     }
+
 }

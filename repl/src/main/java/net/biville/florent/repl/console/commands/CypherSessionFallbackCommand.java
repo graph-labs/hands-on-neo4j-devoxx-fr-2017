@@ -1,5 +1,6 @@
 package net.biville.florent.repl.console.commands;
 
+import net.biville.florent.repl.exercises.Exercise;
 import net.biville.florent.repl.exercises.ExerciseValidation;
 import net.biville.florent.repl.exercises.TraineeSession;
 import net.biville.florent.repl.graph.cypher.CypherError;
@@ -7,13 +8,15 @@ import net.biville.florent.repl.graph.cypher.CypherQueryExecutor;
 import net.biville.florent.repl.graph.cypher.CypherStatementValidator;
 import net.biville.florent.repl.logging.ConsoleLogger;
 import org.jline.utils.AttributedStyle;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.Record;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Default command meant to be executed if and only if other commands do not match.
- * This validates the expression against the embedded grammar and execute it if valid.
+ * This validates the expression against the embedded grammar and rollbacks it if valid.
  */
 public class CypherSessionFallbackCommand implements Command {
 
@@ -48,16 +51,8 @@ public class CypherSessionFallbackCommand implements Command {
             errors.forEach(err -> logger.error(err.toString()));
             return;
         }
-        try {
-            validate(session, statement);
-        } catch (ClientException executionError) {
-            logger.error("The query execution failed. See reason below:");
-            logger.error(executionError.getMessage());
-        }
-    }
 
-    private void validate(TraineeSession session, String statement) {
-        ExerciseValidation validation = session.validate(cypherQueryExecutor.execute(statement));
+        ExerciseValidation validation = validate(session, statement);
         if (!validation.isSuccessful()) {
             logger.error(validation.getReport());
             return;
@@ -68,7 +63,25 @@ public class CypherSessionFallbackCommand implements Command {
         }
         logger.log(validation.getReport());
         logger.log("Now moving on to next exercise! See instructions below...");
-        logger.log(session.getCurrentExercise().getStatement());
+        logger.log(session.getCurrentExercise().getInstructions());
+    }
+
+    private ExerciseValidation validate(TraineeSession session, String statement) {
+        Exercise currentExercise = session.getCurrentExercise();
+        List<Map<String, Object>> actualResult = computeActualResult(statement, currentExercise);
+        return session.validate(actualResult);
+    }
+
+    private List<Map<String, Object>> computeActualResult(String statement, Exercise currentExercise) {
+        if (currentExercise.requiresWrites()) {
+            return cypherQueryExecutor.rollback(tx -> {
+                tx.run(statement);
+                return tx.run(currentExercise.getWriteValidationQuery()).list(Record::asMap);
+            });
+        }
+        return cypherQueryExecutor.rollback(tx -> {
+            return tx.run(statement).list(Record::asMap);
+        });
     }
 
 }

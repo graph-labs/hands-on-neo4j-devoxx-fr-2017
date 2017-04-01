@@ -5,27 +5,38 @@ import java.util.Objects;
 
 public class Exercise {
 
-    private final String statement;
+    private final String instructions;
+    private final String writeValidationQuery;
     private final byte[] serializedResult;
 
-    public Exercise(String statement,
+    public Exercise(String instructions,
+                    String writeValidationQuery,
                     byte[] serializedResult) {
 
-        this.statement = statement;
+        this.instructions = instructions;
+        this.writeValidationQuery = writeValidationQuery;
         this.serializedResult = serializedResult;
     }
 
-    public String getStatement() {
-        return statement;
+    public String getInstructions() {
+        return instructions;
     }
 
     public byte[] getSerializedResult() {
         return serializedResult;
     }
 
+    public String getWriteValidationQuery() {
+        return writeValidationQuery;
+    }
+
+    public boolean requiresWrites() {
+        return writeValidationQuery != null;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(statement, Arrays.hashCode(serializedResult));
+        return Objects.hash(instructions, Arrays.hashCode(serializedResult));
     }
 
 
@@ -38,7 +49,7 @@ public class Exercise {
             return false;
         }
         final Exercise other = (Exercise) obj;
-        return Objects.equals(this.statement, other.statement)
+        return Objects.equals(this.instructions, other.instructions)
                 && Arrays.equals(this.serializedResult, other.serializedResult);
     }
 }
