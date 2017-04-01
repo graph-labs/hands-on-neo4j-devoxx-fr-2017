@@ -1,0 +1,15 @@
+[
+  {
+    "instructions": "You should count all the nodes in the database",
+    "solutionQuery": "MATCH (n) RETURN COUNT(n) AS result"
+  },
+  {
+    "instructions": "You should create a node Person whose name is Marouani",
+    "solutionQuery": "MATCH (n:Person {name:'Marouani'}) RETURN LABELS(n)[0] AS label, n.name AS name",
+    "writeQuery": "CREATE (n:Person {name:'Marouani'})"
+  },
+  {
+    "instructions": "You should count all the nodes of label Person",
+    "solutionQuery": "MATCH (n:Person) RETURN COUNT(n) AS result"
+  }
+]
