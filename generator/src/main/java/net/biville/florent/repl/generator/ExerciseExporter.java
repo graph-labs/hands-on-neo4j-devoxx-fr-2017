@@ -2,9 +2,12 @@ package net.biville.florent.repl.generator;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -19,33 +22,34 @@ import java.util.function.BiConsumer;
 
 public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercise>> {
 
-    private final GraphDatabaseService graphDb;
     private final Kryo kryo;
     private final Base64.Encoder encoder;
+    private final String boltUri;
+    private final AuthToken authToken;
 
-    public ExerciseExporter(GraphDatabaseService graphDb) {
-        this.graphDb = graphDb;
+    public ExerciseExporter(String boltUri, AuthToken authToken) {
+        this.boltUri = boltUri;
+        this.authToken = authToken;
         kryo = new Kryo();
         encoder = Base64.getEncoder();
     }
 
     @Override
     public void accept(File file, Collection<JsonExercise> jsonExercises) {
-        try {
-            Collection<String> cypherQueries = cypherQueries(graphDb, jsonExercises);
+        try (Driver driver = GraphDatabase.driver(boltUri, authToken)) {
+            Collection<String> cypherQueries = cypherQueries(driver, jsonExercises);
             Files.write(file.toPath(), cypherQueries);
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
 
-    private Collection<String> cypherQueries(GraphDatabaseService graphDb, Collection<JsonExercise> jsonExercises) {
+    private Collection<String> cypherQueries(Driver driver, Collection<JsonExercise> jsonExercises) {
         Collection<String> cypherQueries = new ArrayList<>();
         jsonExercises.forEach(exercise -> {
-            try (Transaction transaction = graphDb.beginTx()) {
-                byte[] expectedResult = serialize(graphDb.execute(exercise.getQueryToExecute()));
+            try (Session session = driver.session()) {
+                byte[] expectedResult = serialize(session.run(exercise.getQueryToExecute()));
                 cypherQueries.add(insert(exercise.getStatement(), expectedResult));
-                transaction.success();
             } catch (IOException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
@@ -71,8 +75,8 @@ public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercis
                 "FOREACH (second IN [exercises[i+1]] | MERGE (first)-[:NEXT]->(second))))";
     }
 
-    private byte[] serialize(Result result) throws IOException {
-        List<Map<String, Object>> rows = ResultConverter.INSTANCE.apply(result);
+    private byte[] serialize(StatementResult result) throws IOException {
+        List<Map<String, Object>> rows = result.list(Record::asMap);
         try (Output output = new Output(new ByteArrayOutputStream())) {
             kryo.writeObject(output, rows);
             return output.toBytes();

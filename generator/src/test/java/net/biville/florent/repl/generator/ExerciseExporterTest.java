@@ -7,9 +7,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.harness.junit.Neo4jRule;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -32,25 +37,23 @@ public class ExerciseExporterTest {
 
     private static final Kryo KRYO = new Kryo();
 
-    @Rule
-    public EmbeddedDatabaseRule graphDb = new EmbeddedDatabaseRule();
+    @Rule public Neo4jRule graphDb = new Neo4jRule();
+    @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
     private File dump;
     private BiConsumer<File, Collection<JsonExercise>> exporter;
 
     @Before
     public void prepare() throws IOException {
         dump = folder.newFile("dump.cypher");
-        exporter = new ExerciseExporter(graphDb);
+        exporter = new ExerciseExporter(graphDb.boltURI().toString(), AuthTokens.none());
     }
 
     @Test
     public void exports_single_exercise() throws IOException {
         exporter.accept(dump, singletonList(exercise("Crazy query!", "MATCH (n) RETURN COUNT(n) AS count")));
 
-        String expectedBase64 = "AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAWNvdW70CQA=";
+        String expectedBase64 = "AQEBAGphdmEudXRpbC5Db2xsZWN0aW9ucyRTaW5nbGV0b25NYfABAwFjb3Vu9AkA";
         assertThat(dump).hasContent(
                 String.format("MERGE (e:Exercise {statement: 'Crazy query!', result: '%s'})", expectedBase64)
         );
@@ -68,8 +71,8 @@ public class ExerciseExporterTest {
                 exercise("bar", "MATCH (n:Bar) RETURN COUNT(n) AS bar")));
 
         assertThat(dump).hasContent(
-                "MERGE (e:Exercise {statement: 'foo', result: 'AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAWZv7wkA'})\n" +
-                "MERGE (e:Exercise {statement: 'bar', result: 'AQEBAGphdmEudXRpbC5IYXNoTWHwAQEDAWJh8gkA'})\n" +
+                "MERGE (e:Exercise {statement: 'foo', result: 'AQEBAGphdmEudXRpbC5Db2xsZWN0aW9ucyRTaW5nbGV0b25NYfABAwFmb+8JAA=='})\n" +
+                "MERGE (e:Exercise {statement: 'bar', result: 'AQEBAGphdmEudXRpbC5Db2xsZWN0aW9ucyRTaW5nbGV0b25NYfABAwFiYfIJAA=='})\n" +
                 "MATCH (e:Exercise) WITH e ORDER BY ID(e) WITH COLLECT(e) AS exercises FOREACH (i IN RANGE(0, length(exercises)-2) | FOREACH (first IN [exercises[i]] | FOREACH (second IN [exercises[i+1]] | MERGE (first)-[:NEXT]->(second))))");
     }
 
@@ -81,22 +84,17 @@ public class ExerciseExporterTest {
                 exercise("baz", "MATCH (n:Baz) RETURN COUNT(n) AS baz_count")));
 
         lines(dump.toPath(), UTF_8).forEachOrdered(line -> {
-            try (Transaction transaction = graphDb.beginTx()) {
-                graphDb.execute(line);
-                transaction.success();
+            try (Driver driver = GraphDatabase.driver(graphDb.boltURI(), config()); Session session = driver.session()) {
+                session.run(line);
             }
         });
 
-        try (Transaction ignored = graphDb.beginTx();
-             Result result = graphDb.execute(
+        try (Driver driver = GraphDatabase.driver(graphDb.boltURI(), config()); Session session = driver.session()) {
+            StatementResult result = session.run(
                     "MATCH p=(e1:Exercise)-[:NEXT*]->(e2:Exercise) WITH p ORDER BY LENGTH(p) DESC LIMIT 1 " +
-                          "RETURN EXTRACT(exercise IN NODES(p) | exercise.statement) AS statements")) {
+                            "RETURN EXTRACT(exercise IN NODES(p) | exercise.statement) AS statements");
 
-            assertThat(result.hasNext()).isTrue();
-            @SuppressWarnings("unchecked")
-            Collection<String> statements = (Collection<String>) result.next().get("statements");
-            assertThat(statements).containsExactly("foo", "bar", "baz");
-            assertThat(result.hasNext()).isFalse();
+            assertThat(result.single().get("statements").asList(Value::asString)).containsExactly("foo", "bar", "baz");
         }
     }
 
@@ -114,5 +112,9 @@ public class ExerciseExporterTest {
         exercise.setStatement(statement);
         exercise.setQueryToExecute(query);
         return exercise;
+    }
+
+    private Config config() {
+        return Config.build().withEncryptionLevel(Config.EncryptionLevel.NONE).toConfig();
     }
 }
