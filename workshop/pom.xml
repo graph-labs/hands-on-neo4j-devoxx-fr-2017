@@ -26,6 +26,7 @@
     </dependencies>
 
     <build>
+        <finalName>devoxx-fr-2017-neo4j-lab</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
