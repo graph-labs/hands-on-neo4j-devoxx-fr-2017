@@ -26,7 +26,7 @@ public class ExerciseRepository {
     public void importExercises(InputStream dataset) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(dataset, UTF_8))) {
             executor.commit(tx -> {
-                reader.lines().forEachOrdered(tx::run);
+                reader.lines().forEachOrdered(line -> tx.run(line.replaceAll("\\\\n", "\n")));
             });
             executor.commit(tx -> {
                 tx.run("MERGE (s:TraineeSession) ON CREATE SET s.temp = true");

@@ -123,6 +123,6 @@ public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercis
     }
 
     private static String escape(String text) {
-        return text.replaceAll("'", "\\\\'");
+        return text.replaceAll("'", "\\\\'").replaceAll("\n", "\\\\n");
     }
 }
