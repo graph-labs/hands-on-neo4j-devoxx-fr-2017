@@ -46,5 +46,45 @@
   {
     "instructions": "Trouvez tous les titres de film commençant par 'for' (case-insensitive) avec leur nombre éventuel de stars (null sinon)",
     "solutionQuery": "MATCH (m:Movie) WHERE LOWER(m.title) =~ 'for.*' OPTIONAL MATCH (m)<-[r:RATED]-(:User)  RETURN m.title AS title, r.stars AS stars"
+  },
+  {
+    "instructions": "France Télévisions est furieuse Patrick Sébastien n'est pas dans le graphe !\nPatrick Sébastien est à la fois acteur et producteur, le but du jeu est donc d'insérer un noeud avec les deux labels correspondant et son nom.\nIl s'agit de votre premier exercise en écriture, notez bien qu'aucune écriture ne sera committée dans votre base de données, chaque exercice reste indépendant.\nSi vous testez des requêtes d'écriture dans votre navigateur, pensez à supprimer leurs résultats avant de résoudre l'exercice !",
+    "solutionQuery": "MATCH (n:Actor:Director {name:'Patrick Sébastien'}) RETURN n.name AS name",
+    "writeQuery": "CREATE (:Actor:Director {name:'Patrick Sébastien'})"
+  },
+  {
+    "instructions": "Toujours pas satisfaite, France TV revient à la charge !\nIl faut de nouveau ajouter Patrick Sébastien (seul son rôle de DIRECTOR importe ici) mais également un des films dont il a le secret (insérer aussi le fait qu'il l'a dirigé):\nT'aime, sorti en français en 1999 (définissez simplement son titre, sa langue et son timestamp de sortie: 922917600).",
+    "solutionQuery": "MATCH (director:Director {name:'Patrick Sébastien'})-[:DIRECTED]->(movie:Movie {title:\"T'aime\", language:'fr', releaseDate:922917600}) RETURN director.name, movie.title, movie.language, movie.releaseDate",
+    "writeQuery": "CREATE (:Director {name:'Patrick Sébastien'})-[:DIRECTED]->(:Movie {title:\"T'aime\", language:'fr', releaseDate:922917600})"
+  },
+  {
+    "instructions": "Fait étrange : l'utilisateur Emil Eifrem (accessoirement CEO de Neo Technology, mais c'est une autre histoire), n'a pas encore évalué le film 'The Matrix Revolutions' contrairement aux deux opus précédents de la trilogie.\nCorrigeons cette erreur : Emil a aimé moyennement le film (3 stars) avec le commentaire: \"Meh, liked the previous ones better\".",
+    "solutionQuery": "MATCH (emil:User {name:'Emil Eifrem'}), (matrix:Movie {title:'The Matrix Revolutions'}) OPTIONAL MATCH (emil)-[r:RATED]->(matrix) RETURN r.stars AS stars, r.comment AS comment",
+    "writeQuery": "MATCH (emil:User {name:'Emil Eifrem'}), (matrix:Movie {title:'The Matrix Revolutions'}) CREATE (emil)-[:RATED {stars:3, comment:'Meh, liked the previous ones better'}]->(matrix)"
+  },
+  {
+    "instructions": "D'ailleurs, réparons une injustice. Emil Eifrem devrait aussi être caractérisé par son rôle de CEO : sans lui, pas d'atelier aujourd'hui !\nAjoutons-lui un attribut 'profession' dont la valeur sera 'CEO'.",
+    "solutionQuery": "MATCH (emil:User {name:'Emil Eifrem'}) RETURN emil.profession AS profession",
+    "writeQuery": "MATCH (emil:User {name:'Emil Eifrem'}) SET emil.profession = 'CEO'"
+  },
+  {
+    "instructions": "L'union des producteurs est révoltée : certaines évaluations sont en dessous de 5/5 !\nPour éviter que la purge soit trop évidente, l'union a décidé de supprimer toutes les évaluations en dessous de 5, si et seulement si le login de l'utilisateur contient un A (case-insensitive).\nAstuce Cypher : il n'existe pas de fonction CONTAINS en Cypher, on utilisera plutôt `string =~ 'my-regex'`",
+    "solutionQuery": "MATCH (u:User)-[r:RATED]->(:Movie) WHERE r.stars < 5 RETURN u.login AS login ORDER BY login ASC",
+    "writeQuery": "MATCH (u:User)-[r:RATED]->(:Movie) WHERE r.stars < 5 AND LOWER(u.login) =~ '.*a.*' DELETE r"
+  },
+  {
+    "instructions": "L'experte SEO Agnès Iho vous demande d'agir vite : supprimez les commentaires de moins de 15 caractères sinon le référencement va sombrer !\nAttention, les évaluations doivent rester !",
+    "solutionQuery": "MATCH (:User)-[r:RATED]->(:Movie) WHERE EXISTS(r.comment) RETURN LENGTH(r.comment) AS comment_length ORDER BY LENGTH(r.comment) ASC",
+    "writeQuery": "MATCH (:User)-[r:RATED]->(:Movie) WHERE LENGTH(r.comment) < 15 REMOVE r.comment"
+  },
+  {
+    "instructions": "L'architecte logiciel Rachid Tecte vient vous demander une optimisation.\nPlutôt que de le calculer à la volée, il souhaiterait persister le nombre de commentaires par film comme attribut de chaque film. Appelons cet attribut 'comment_count' (parce que 'machin', ça sonnait moins bien).\nAstuce Cypher : COLLECT est votre ami !",
+    "solutionQuery": "MATCH (m:Movie) WHERE m.comment_count > 0 RETURN m.title AS movie_title_with_at_least_one_comment",
+    "writeQuery": "MATCH (m:Movie)<-[r:RATED]-(:User) WHERE EXISTS(r.comment) WITH m, COLLECT(r.comment) AS comments SET m.comment_count = LENGTH(comments)"
+  },
+  {
+    "instructions": "Finalement, l'union des producteurs a revu sa position.\nPlutôt que de retirer les mauvaises évaluations (note < 5), ils préfèreraient cette fois que vous signaliez les mauvaises évaluations via un nouvel attribut appelé 'hidden' si leur auteur est influent (au moins 1 ami).",
+    "solutionQuery": "MATCH (u:User)-[r:RATED {hidden: true}]->(m:Movie) RETURN u.login AS login, r.stars AS hidden_review_stars, m.title AS title",
+    "writeQuery": "MATCH (f:User)-[:FRIEND]-(u:User) WITH LENGTH(COLLECT(f)) AS friend_count,u WHERE friend_count >= 1 MATCH (u)-[r:RATED]->(:Movie) WHERE r.stars < 5 WITH COLLECT(r) AS ratings FOREACH(rating IN ratings | SET rating.hidden = true)"
   }
 ]
