@@ -63,6 +63,6 @@ public class CypherError {
 
     @Override
     public String toString() {
-        return message;
+        return String.format("Line: %d, position: %d - ", line, charPositionInLine) + message;
     }
 }
