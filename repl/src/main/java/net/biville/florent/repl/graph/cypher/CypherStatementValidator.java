@@ -15,18 +15,23 @@ public class CypherStatementValidator {
     }
 
     private Collection<CypherError> parse(String statement) {
-        CypherParser parser = parser(statement);
-        parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
         CypherErrorStatefulListener listener = new CypherErrorStatefulListener();
-        parser.addErrorListener(listener);
+        CypherLexer lexer = new CypherLexer(new ANTLRInputStream(statement));
+        listenToLexerErrors(listener, lexer);
+        CypherParser parser = new CypherParser(new CommonTokenStream(lexer));
+        listenToParserErrors(listener, parser);
         parser.cypher();
         return listener.getErrors();
     }
 
-    private CypherParser parser(String statement) {
-        CypherLexer lexer = new CypherLexer(new ANTLRInputStream(statement));
-        CommonTokenStream commonTokenStream = new CommonTokenStream(lexer);
-        return new CypherParser(commonTokenStream);
+    private void listenToLexerErrors(CypherErrorStatefulListener listener, CypherLexer lexer) {
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(listener);
+    }
+
+    private void listenToParserErrors(CypherErrorStatefulListener listener, CypherParser parser) {
+        parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
+        parser.addErrorListener(listener);
     }
 
 }
