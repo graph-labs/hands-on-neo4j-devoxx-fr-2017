@@ -9,6 +9,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -68,6 +69,8 @@ public class ExerciseExporter implements BiConsumer<File, Collection<JsonExercis
             return query;
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
+        } catch (ClientException e) {
+            throw new RuntimeException(String.format("This exercise fails: %s%s", System.lineSeparator(), exercise.toString()), e);
         }
     }
 

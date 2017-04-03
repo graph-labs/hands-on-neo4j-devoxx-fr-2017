@@ -35,4 +35,13 @@ public class JsonExercise {
     public boolean requiresWrite() {
         return writeQuery != null;
     }
+
+    @Override
+    public String toString() {
+        return "JsonExercise{" +
+                "instructions='" + instructions + '\'' +
+                ", solutionQuery='" + solutionQuery + '\'' +
+                ", writeQuery='" + writeQuery + '\'' +
+                '}';
+    }
 }
