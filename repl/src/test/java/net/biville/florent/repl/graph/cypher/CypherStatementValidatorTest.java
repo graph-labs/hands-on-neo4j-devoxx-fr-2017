@@ -39,4 +39,9 @@ public class CypherStatementValidatorTest {
                         1, 37, "token recognition error at: '~'"
                 ));
     }
+
+    @Test
+    public void exists_in_where_should_not_raise_errors() {
+        assertThat(validator.validate("MATCH (m:Movie) WHERE EXISTS(m.title) RETURN m;")).isEmpty();
+    }
 }

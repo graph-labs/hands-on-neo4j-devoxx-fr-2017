@@ -297,6 +297,7 @@ atom : literal
      | ( ANY SP? '(' SP? filterExpression SP? ')' )
      | ( NONE SP? '(' SP? filterExpression SP? ')' )
      | ( SINGLE SP? '(' SP? filterExpression SP? ')' )
+     | ( EXISTS SP? '(' SP? propertyExpression SP? ')' )
      | shortestPathPattern
      | relationshipsPattern
      | parenthesizedExpression
