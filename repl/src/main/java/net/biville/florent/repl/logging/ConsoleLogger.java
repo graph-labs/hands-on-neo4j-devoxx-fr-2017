@@ -19,12 +19,21 @@ public class ConsoleLogger {
         log(string, style, args);
     }
 
-    public void log(String string, AttributedStyle style, Object[] args) {
+    public void log(String string, AttributedStyle style, Object... args) {
+        if (args.length == 0) {
+            log(System.out, style, string);
+            return;
+        }
         log(System.out, style, String.format(string, args));
     }
 
     public void error(String string, Object... args) {
-        log(System.out, AttributedStyle.BOLD.foreground(AttributedStyle.RED), String.format(string, args));
+        AttributedStyle style = AttributedStyle.BOLD.foreground(AttributedStyle.RED);
+        if (args.length == 0) {
+            log(System.err, style, string);
+            return;
+        }
+        log(System.err, style, String.format(string, args));
     }
 
     private void log(PrintStream out, AttributedStyle style, String log) {
