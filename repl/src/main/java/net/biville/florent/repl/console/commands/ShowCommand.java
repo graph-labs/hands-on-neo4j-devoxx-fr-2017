@@ -4,6 +4,8 @@ import net.biville.florent.repl.exercises.TraineeSession;
 import net.biville.florent.repl.logging.ConsoleLogger;
 import org.jline.utils.AttributedStyle;
 
+import static org.jline.utils.AttributedStyle.BLUE;
+
 public class ShowCommand implements Command {
 
     private final ConsoleLogger logger;
@@ -24,7 +26,7 @@ public class ShowCommand implements Command {
 
     @Override
     public void accept(TraineeSession session, String ignored) {
-        logger.log(session.getCurrentExercise().getInstructions(), AttributedStyle.DEFAULT.italic());
+        logger.log(session.getCurrentExercise().getInstructions(), AttributedStyle.BOLD.italic().foreground(BLUE));
     }
 
     @Override
