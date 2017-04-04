@@ -28,16 +28,8 @@
     "solutionQuery": "MATCH (a: Actor)-[:ACTS_IN]->(:Movie {title: 'Titanic'}), (a)-[:ACTS_IN]->(:Movie {title:'The Lord of the Rings: The Return of the King'}) return a.name as name;"
   },
   {
-    "instructions": "Trouvez tous les noms de film ayant une note ainsi que les personnes qui les ont notés",
-    "solutionQuery": "MATCH (m: Movie)<-[:RATED]-(p: Person) return p.name as name ,m.title as title;"
-  },
-  {
-    "instructions": "Trouvez tous les noms de film ayant une note de 5 ainsi que les personnes qui les ont notés",
+    "instructions": "Trouvez tous les noms de film ayant une note de 5 avec les utilisateurs qui les ont notés",
     "solutionQuery": "MATCH (m: Movie)<-[:RATED {stars: 5}]-(p: Person) return p.name as name ,m.title as title;"
-  },
-  {
-    "instructions": "Trouvez tous les noms des personnes ayant dirigé les films dont le titre est exactement Titanic",
-    "solutionQuery": "MATCH (:Movie {title: 'Titanic'})<-[:DIRECTED]-(p:Person) RETURN p.name as name;"
   },
   {
     "instructions": "Trouvez tous les noms des personnes ayant dirigé les films dont le titre contient Titanic\nAstuce Cypher : il n'existe pas de fonction CONTAINS en Cypher, on utilisera plutôt `string =~ 'my-regex'`",
