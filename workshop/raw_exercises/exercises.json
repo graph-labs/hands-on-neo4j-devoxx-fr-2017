@@ -40,6 +40,18 @@
     "solutionQuery": "MATCH (m:Movie) WHERE LOWER(m.title) =~ 'for.*' OPTIONAL MATCH (m)<-[r:RATED]-(:User)  RETURN m.title AS title, r.stars AS stars"
   },
   {
+    "instructions" : "Passons aux agrégations!\nTrouvez tous les titres de films, par ordre lexicographique croissant, qui ont reçu au moins 2 évaluations.\nAstuce Cypher : le combo COLLECT & WITH devrait vous aider !",
+    "solutionQuery": "MATCH (m:Movie)<-[r:RATED]-(:User) WITH m, COLLECT(r) AS ratings WHERE LENGTH(ratings) > 1 RETURN m.title AS title ORDER BY title ASC"
+  },
+  {
+    "instructions" : "Trouvez les noms des deux derniers directors (il y en a 3), dans l'ordre lexicographique croissant, qui ont dirigé au moins deux films avec des évaluations par des utilisateurs (User).",
+    "solutionQuery": "MATCH (d:Director)-[:DIRECTED]->(m:Movie)<-[r:RATED]-(:User) WITH d, COLLECT(m.title) AS titles WHERE LENGTH(titles) > 1 RETURN d.name SKIP 1"
+  },
+  {
+    "instructions" : "Trouvez les noms des acteurs qui relient, via leur plus court chemin, l'acteur 50 Cent (si si, c'est aussi un acteur) et l'acteur Michael Graham Cox.\nNote : le résultat inclut l'acteur de départ et d'arrivée.\nAstuce Cypher : les fonctions SHORTESTPATH, NODES et UNWIND devraient vous être utiles.",
+    "solutionQuery": "MATCH p=SHORTESTPATH((a:Actor {name:'Michael Graham Cox'})-[*1..]-(f:Actor {name:'50 Cent'})) UNWIND NODES(p) AS n WITH n WHERE n:Actor RETURN n.name AS name"
+  },
+  {
     "instructions": "Passons aux exercices d'écriture.\nFrance Télévisions est furieuse : Patrick Sébastien n'est pas dans le graphe !\nPatrick Sébastien est à la fois acteur et producteur, le but du jeu est donc d'insérer un noeud avec les deux labels correspondant et son nom.",
     "solutionQuery": "MATCH (n:Actor:Director {name:'Patrick Sébastien'}) RETURN n.name AS name",
     "writeQuery": "CREATE (:Actor:Director {name:'Patrick Sébastien'})"
