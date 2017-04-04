@@ -24,28 +24,28 @@
     "solutionQuery": "MATCH (a: Actor)-[:ACTS_IN]->(m: Movie {studio: 'Paramount Pictures'})<-[:DIRECTED]-(:Director {name: 'James Cameron'}) return a.name as name;"
   },
   {
-    "instructions": "Trouvez le nom de l'acteur qui a joué à la fois dans Titanic et The Lord of the Rings: The Return of the King",
+    "instructions": "Trouvez le nom de l'acteur qui a joué à la fois dans 'Titanic' et 'The Lord of the Rings: The Return of the King'",
     "solutionQuery": "MATCH (a: Actor)-[:ACTS_IN]->(:Movie {title: 'Titanic'}), (a)-[:ACTS_IN]->(:Movie {title:'The Lord of the Rings: The Return of the King'}) return a.name as name;"
   },
   {
-    "instructions": "Trouvez tous les noms de film ayant une note de 5 avec les utilisateurs qui les ont notés",
-    "solutionQuery": "MATCH (m: Movie)<-[:RATED {stars: 5}]-(p: Person) return p.name as name ,m.title as title;"
+    "instructions": "Trouvez tous les noms de film ayant une note de 5 avec les utilisateurs (User) qui les ont notés",
+    "solutionQuery": "MATCH (m: Movie)<-[:RATED {stars: 5}]-(p: User) return p.name as name, m.title as title;"
   },
   {
-    "instructions": "Trouvez tous les noms des personnes ayant dirigé les films dont le titre contient Titanic\nAstuce Cypher : il n'existe pas de fonction CONTAINS en Cypher, on utilisera plutôt `string =~ 'my-regex'`",
-    "solutionQuery": "MATCH (m: Movie) where lower(m.title) =~ '.*titanic.*' return m.title as title;"
+    "instructions": "Trouvez tous les noms des directors ayant dirigé les films dont le titre contient 'titanic'\nAstuce Cypher : il n'existe pas de fonction CONTAINS ou LIKE en Cypher, on utilisera plutôt `string =~ 'my-regex'`",
+    "solutionQuery": "MATCH (m:Movie)<-[:DIRECTED]-(d:Director) WHERE LOWER(m.title) =~ '.*titanic.*' return d.name AS name;"
   },
   {
-    "instructions": "Trouvez tous les titres de film commençant par 'for' (case-insensitive) avec leur nombre éventuel de stars (null sinon)",
+    "instructions": "Trouvez tous les titres de film commençant par 'for' (case-insensitive) avec leurs notes si elles existent, null sinon",
     "solutionQuery": "MATCH (m:Movie) WHERE LOWER(m.title) =~ 'for.*' OPTIONAL MATCH (m)<-[r:RATED]-(:User)  RETURN m.title AS title, r.stars AS stars"
   },
   {
-    "instructions": "France Télévisions est furieuse Patrick Sébastien n'est pas dans le graphe !\nPatrick Sébastien est à la fois acteur et producteur, le but du jeu est donc d'insérer un noeud avec les deux labels correspondant et son nom.",
+    "instructions": "Passons aux exercices d'écriture.\nFrance Télévisions est furieuse : Patrick Sébastien n'est pas dans le graphe !\nPatrick Sébastien est à la fois acteur et producteur, le but du jeu est donc d'insérer un noeud avec les deux labels correspondant et son nom.",
     "solutionQuery": "MATCH (n:Actor:Director {name:'Patrick Sébastien'}) RETURN n.name AS name",
     "writeQuery": "CREATE (:Actor:Director {name:'Patrick Sébastien'})"
   },
   {
-    "instructions": "Toujours pas satisfaite, France TV revient à la charge !\nIl faut de nouveau ajouter Patrick Sébastien (seul son rôle de DIRECTOR importe ici) mais également un des films dont il a le secret (insérer aussi le fait qu'il l'a dirigé):\nT'aime, sorti en français en 1999 (définissez simplement son titre, sa langue et son timestamp de sortie: 922917600).",
+    "instructions": "Toujours pas satisfaite, France TV revient à la charge !\nIl faut de nouveau ajouter Patrick Sébastien (seul son rôle de Director importe ici) mais également un des films dont il a le secret (insérer aussi le fait qu'il l'a dirigé):\nT'aime, sorti en français en 1999 (définissez simplement son titre, sa langue et son timestamp de sortie: 922917600).",
     "solutionQuery": "MATCH (director:Director {name:'Patrick Sébastien'})-[:DIRECTED]->(movie:Movie {title:\"T'aime\", language:'fr', releaseDate:922917600}) RETURN director.name, movie.title, movie.language, movie.releaseDate",
     "writeQuery": "CREATE (:Director {name:'Patrick Sébastien'})-[:DIRECTED]->(:Movie {title:\"T'aime\", language:'fr', releaseDate:922917600})"
   },
