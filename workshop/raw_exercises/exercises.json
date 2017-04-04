@@ -48,7 +48,7 @@
     "solutionQuery": "MATCH (m:Movie) WHERE LOWER(m.title) =~ 'for.*' OPTIONAL MATCH (m)<-[r:RATED]-(:User)  RETURN m.title AS title, r.stars AS stars"
   },
   {
-    "instructions": "France Télévisions est furieuse Patrick Sébastien n'est pas dans le graphe !\nPatrick Sébastien est à la fois acteur et producteur, le but du jeu est donc d'insérer un noeud avec les deux labels correspondant et son nom.\nIl s'agit de votre premier exercise en écriture, notez bien qu'aucune écriture ne sera committée dans votre base de données, chaque exercice reste indépendant.\nSi vous testez des requêtes d'écriture dans votre navigateur, pensez à supprimer leurs résultats avant de résoudre l'exercice !",
+    "instructions": "France Télévisions est furieuse Patrick Sébastien n'est pas dans le graphe !\nPatrick Sébastien est à la fois acteur et producteur, le but du jeu est donc d'insérer un noeud avec les deux labels correspondant et son nom.",
     "solutionQuery": "MATCH (n:Actor:Director {name:'Patrick Sébastien'}) RETURN n.name AS name",
     "writeQuery": "CREATE (:Actor:Director {name:'Patrick Sébastien'})"
   },

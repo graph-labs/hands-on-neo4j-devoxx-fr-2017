@@ -63,15 +63,20 @@ public class Console {
                 "MMMMMMMMWNK0kkkO0XWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n" +
                 "MMMMMMMMMMMMWWWWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n" +
                 "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM", AttributedStyle.BOLD.foreground(GREEN));
+        AttributedStyle warningStyle = AttributedStyle.BOLD.blink().foreground(YELLOW);
         logger.log("");
-        logger.log("Starting session now...", AttributedStyle.DEFAULT.italic());
+        logger.log("Initializing session now...", AttributedStyle.DEFAULT.italic());
         session.init(this.getClass().getResourceAsStream("/exercises/dump.cypher"));
         logger.log("... done!", AttributedStyle.DEFAULT.italic());
         logger.log("");
         logger.log("Welcome to Devoxx France 2017 Hands on Neo4j!");
-        logger.log("Please make sure your Cypher statements end with a semicolon.", AttributedStyle.DEFAULT.blink().foreground(YELLOW));
         logger.log("Available commands can be displayed with ':commands'");
         logger.log("");
+        logger.log("Please make sure your Cypher statements end with a semicolon.", warningStyle);
+        logger.log("Every exercise is independent, no changes are persisted against your database.", warningStyle);
+        logger.log("Make sure to undo the insertions in the browser before using this REPL!", warningStyle);
+        logger.log("");
+        logger.log("Ask for help when needed and have fun!", AttributedStyle.BOLD.foreground(AttributedStyle.CYAN));
         while (true) {
             try {
                 String statement = lineReader.readLine("(:Devoxx)-[:`<3`]-(:Cypher)> ");
