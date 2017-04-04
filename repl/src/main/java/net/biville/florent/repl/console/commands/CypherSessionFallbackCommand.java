@@ -14,6 +14,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static org.jline.utils.AttributedStyle.BLUE;
+
 /**
  * Default command meant to be executed if and only if other commands do not match.
  * This validates the expression against the embedded grammar and rollbacks it if valid.
@@ -63,7 +65,7 @@ public class CypherSessionFallbackCommand implements Command {
         }
         logger.log(validation.getReport());
         logger.log("Now moving on to next exercise! See instructions below...");
-        logger.log(session.getCurrentExercise().getInstructions());
+        logger.log(session.getCurrentExercise().getInstructions(), AttributedStyle.BOLD.italic().foreground(BLUE));
     }
 
     private ExerciseValidation validate(TraineeSession session, String statement) {
