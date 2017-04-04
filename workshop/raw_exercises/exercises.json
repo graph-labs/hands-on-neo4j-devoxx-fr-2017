@@ -1,15 +1,50 @@
 [
   {
-    "instructions": "You should count all the nodes in the database",
-    "solutionQuery": "MATCH (n) RETURN COUNT(n) AS result"
+    "instructions": "Trouvez le nombre de films",
+    "solutionQuery": "MATCH (m: Movie) RETURN COUNT(m) as count;"
   },
   {
-    "instructions": "You should create a node Person whose name is Marouani",
-    "solutionQuery": "MATCH (n:Person {name:'Marouani'}) RETURN LABELS(n)[0] AS label, n.name AS name",
-    "writeQuery": "CREATE (n:Person {name:'Marouani'})"
+    "instructions": "Trouvez le nombre de films d'action",
+    "solutionQuery": "MATCH (m: Movie {genre: 'Action'}) RETURN COUNT(m) as count;"
   },
   {
-    "instructions": "You should count all the nodes of label Person",
-    "solutionQuery": "MATCH (n:Person) RETURN COUNT(n) AS result"
+    "instructions": "Trouvez tous les titres de films joués par Vincent Cassel",
+    "solutionQuery": "MATCH (m: Movie)<-[:ACTS_IN]-(a:Actor {name: 'Vincent Cassel'}) return m.title as title;"
+  },
+  {
+    "instructions": "Trouvez tous les titres de films que James Cameron a dirigé",
+    "solutionQuery": "MATCH (m: Movie)<-[:DIRECTED]-(:Director {name: 'James Cameron'}) return m.title as title;"
+  },
+  {
+    "instructions": "Trouvez tous les titres de films que James Cameron a dirigé pour le compte des studios Paramount Pictures",
+    "solutionQuery": "MATCH (m: Movie {studio: 'Paramount Pictures'})<-[:DIRECTED]-(:Director {name: 'James Cameron'}) return m.title as title;"
+  },
+  {
+    "instructions": "Trouvez les noms des acteurs qui ont joué dans le film que James Cameron a créé pour le compte des studios Paramount Pictures",
+    "solutionQuery": "MATCH (a: Actor)-[:ACTS_IN]->(m: Movie {studio: 'Paramount Pictures'})<-[:DIRECTED]-(:Director {name: 'James Cameron'}) return a.name as name;"
+  },
+  {
+    "instructions": "Trouvez le nom de l'acteur qui a joué à la fois dans Titanic et The Lord of the Rings: The Return of the King",
+    "solutionQuery": "MATCH (a: Actor)-[:ACTS_IN]->(:Movie {title: 'Titanic'}), (a)-[:ACTS_IN]->(:Movie {title:'The Lord of the Rings: The Return of the King'}) return a.name as name;"
+  },
+  {
+    "instructions": "Trouvez tous les noms de film ayant une note ainsi que les personnes qui les ont notés",
+    "solutionQuery": "MATCH (m: Movie)<-[:RATED]-(p: Person) return p.name as name ,m.title as title;"
+  },
+  {
+    "instructions": "Trouvez tous les noms de film ayant une note de 5 ainsi que les personnes qui les ont notés",
+    "solutionQuery": "MATCH (m: Movie)<-[:RATED {stars: 5}]-(p: Person) return p.name as name ,m.title as title;"
+  },
+  {
+    "instructions": "Trouvez tous les noms des personnes ayant dirigé les films dont le titre est exactement Titanic",
+    "solutionQuery": "MATCH (:Movie {title: 'Titanic'})<-[:DIRECTED]-(p:Person) RETURN p.name as name;"
+  },
+  {
+    "instructions": "Trouvez tous les noms des personnes ayant dirigé les films dont le titre contient Titanic\nAstuce Cypher : il n'existe pas de fonction CONTAINS en Cypher, on utilisera plutôt `string =~ 'my-regex'`",
+    "solutionQuery": "MATCH (m: Movie) where lower(m.title) =~ '.*titanic.*' return m.title as title;"
+  },
+  {
+    "instructions": "Trouvez tous les titres de film commençant par 'for' (case-insensitive) avec leur nombre éventuel de stars (null sinon)",
+    "solutionQuery": "MATCH (m:Movie) WHERE LOWER(m.title) =~ 'for.*' OPTIONAL MATCH (m)<-[r:RATED]-(:User)  RETURN m.title AS title, r.stars AS stars"
   }
 ]
