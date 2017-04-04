@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.Comparator.comparing;
+
 class ResultOperations {
 
     public static ResultDifference difference(List<Map<String, Object>> actualResult,
@@ -35,8 +37,8 @@ class ResultOperations {
         Set<Map.Entry<String, Object>> expectedEntries = expectedRow.entrySet();
 
         return new ResultRowDifference(
-                expectedEntries.stream().filter(e -> !actualEntries.contains(e)).collect(Collectors.toList()),
-                actualEntries.stream().filter(a -> !expectedEntries.contains(a)).collect(Collectors.toList())
+                expectedEntries.stream().sorted(comparing(Map.Entry::getKey)).filter(e -> !actualEntries.contains(e)).collect(Collectors.toList()),
+                actualEntries.stream().sorted(comparing(Map.Entry::getKey)).filter(a -> !expectedEntries.contains(a)).collect(Collectors.toList())
         );
     }
 }
