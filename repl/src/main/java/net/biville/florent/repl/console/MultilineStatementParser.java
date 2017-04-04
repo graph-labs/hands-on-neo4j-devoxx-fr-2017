@@ -6,6 +6,7 @@ import org.jline.reader.ParsedLine;
 import org.jline.reader.Parser;
 import org.jline.reader.SyntaxError;
 
+import java.util.Collections;
 import java.util.List;
 
 public class MultilineStatementParser implements Parser {
@@ -36,12 +37,12 @@ public class MultilineStatementParser implements Parser {
 
         @Override
         public String word() {
-            return null;
+            return line;
         }
 
         @Override
         public int wordCursor() {
-            return 0;
+            return cursor;
         }
 
         @Override
@@ -51,7 +52,7 @@ public class MultilineStatementParser implements Parser {
 
         @Override
         public List<String> words() {
-            return null;
+            return Collections.singletonList(line);
         }
 
         @Override

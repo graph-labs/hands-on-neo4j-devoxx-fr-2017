@@ -23,7 +23,10 @@ public class MultilineStatementParserTest {
 
         parser.parse("RETURN n;", 8);
 
+        assertThat(parsedLine.cursor()).isEqualTo(8);
         assertThat(parsedLine.words()).containsExactly("MATCH (n)\nRETURN n;");
+        assertThat(parsedLine.word()).isEqualTo("MATCH (n)\nRETURN n;");
+        assertThat(parsedLine.wordCursor()).isEqualTo(8);
     }
 
     @Test
