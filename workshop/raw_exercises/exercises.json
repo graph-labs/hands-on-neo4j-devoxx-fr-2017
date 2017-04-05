@@ -90,5 +90,13 @@
     "instructions": "Finalement, l'union des producteurs a revu sa position.\nPlutôt que de retirer les mauvaises évaluations (note < 5), ils préfèreraient cette fois que vous signaliez les mauvaises évaluations via un nouvel attribut appelé 'hidden' si leur auteur est influent (au moins 1 ami).",
     "solutionQuery": "MATCH (u:User)-[r:RATED {hidden: true}]->(m:Movie) RETURN u.login AS login, r.stars AS hidden_review_stars, m.title AS title",
     "writeQuery": "MATCH (f:User)-[:FRIEND]-(u:User) WITH LENGTH(COLLECT(f)) AS friend_count,u WHERE friend_count >= 1 MATCH (u)-[r:RATED]->(:Movie) WHERE r.stars < 5 WITH COLLECT(r) AS ratings FOREACH(rating IN ratings | SET rating.hidden = true)"
+  },
+  {
+    "instructions": "Pour cet exercice, il vous sera demandé de compléter et déployer le projet 'hands-on-neo4j-devoxx-fr-2017-cypher-extensions'.\nIl vous faut compléter et déployer la procédure 'recommendMovies' (voir instructions dans le projet).\nUne fois déployé, il faudra l'invoquer pour les utilisateurs 'Emil Eifrem' et 'Sangreal'.",
+    "solutionQuery": "CALL devoxxfr2017.recommendMovies('Emil Eifrem', 'Sangreal') YIELD title"
+  },
+  {
+    "instructions": "Pour cet exercice, il vous sera demandé de compléter et déployer le projet 'hands-on-neo4j-devoxx-fr-2017-cypher-extensions'.\nIl vous faut compléter et déployer la fonction 'averageRating' (voir instructions dans le projet).\nUne fois déployé, il faudra l'invoquer pour film 'The Matrix'.",
+    "solutionQuery": "RETURN devoxxfr2017.averageRating('The Matrix') AS average_rating"
   }
 ]
