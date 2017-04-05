@@ -1,5 +1,6 @@
 package net.biville.florent.repl.console.commands;
 
+import net.biville.florent.repl.exercises.Exercise;
 import net.biville.florent.repl.exercises.TraineeSession;
 import net.biville.florent.repl.logging.ConsoleLogger;
 import org.jline.utils.AttributedStyle;
@@ -28,6 +29,6 @@ public class ResetProgressionCommand implements Command {
     public void accept(TraineeSession session, String ignored) {
         session.reset();
         logger.log("Progression reset! Current exercise is now:");
-        logger.log(session.getCurrentExercise().getInstructions(), AttributedStyle.BOLD.italic().foreground(BLUE));
+        session.getCurrentExercise().accept(logger);
     }
 }

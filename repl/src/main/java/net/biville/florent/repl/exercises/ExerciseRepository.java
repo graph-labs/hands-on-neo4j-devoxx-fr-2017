@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ExerciseRepository {
@@ -43,10 +44,16 @@ public class ExerciseRepository {
     }
 
     public Exercise findCurrentExercise() {
-
         List<Map<String, Object>> rows = executor.rollback(tx -> {
-            return tx.run("MATCH (:TraineeSession)-[:CURRENTLY_AT]->(e:Exercise) " +
-                    "RETURN e.instructions AS instructions, e.result AS result, e.validationQuery AS validationQuery").list(Record::asMap);
+            return tx.run("MATCH (:TraineeSession)-[:CURRENTLY_AT]->(e:Exercise)<-[p:NEXT*0..]-(:Exercise), (all:Exercise) " +
+                    "WITH e,p, COUNT(all) AS total " +
+                    "ORDER BY LENGTH(p) DESC LIMIT 1 " +
+                    "RETURN e.instructions AS instructions," +
+                    "       e.result AS result," +
+                    "       e.validationQuery AS validationQuery," +
+                    "       1+LENGTH(p) AS position," +
+                    "       total"
+            ).list(Record::asMap);
         });
 
         int count = rows.size();
@@ -59,8 +66,9 @@ public class ExerciseRepository {
         return new Exercise(
                 row.get("instructions").toString(),
                 validationQuery == null ? null : validationQuery.toString(),
-                decoder.decode(row.get("result").toString())
-        );
+                decoder.decode(row.get("result").toString()),
+                parseInt(row.get("position").toString(), 10),
+                parseInt(row.get("total").toString(), 10));
     }
 
     public boolean moveToNextExercise() {
