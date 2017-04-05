@@ -9,12 +9,13 @@ import net.biville.florent.repl.graph.cypher.CypherStatementValidator;
 import net.biville.florent.repl.logging.ConsoleLogger;
 import org.jline.utils.AttributedStyle;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static org.jline.utils.AttributedStyle.BLUE;
+import static java.lang.String.format;
 
 /**
  * Default command meant to be executed if and only if other commands do not match.
@@ -70,8 +71,16 @@ public class CypherSessionFallbackCommand implements Command {
 
     private ExerciseValidation validate(TraineeSession session, String statement) {
         Exercise currentExercise = session.getCurrentExercise();
-        List<Map<String, Object>> actualResult = computeActualResult(statement, currentExercise);
-        return session.validate(actualResult);
+        return tryValidate(session, statement, currentExercise);
+    }
+
+    private ExerciseValidation tryValidate(TraineeSession session, String statement, Exercise currentExercise) {
+        try {
+            List<Map<String, Object>> actualResult = computeActualResult(statement, currentExercise);
+            return session.validate(actualResult);
+        } catch (ClientException e) {
+            return new ExerciseValidation(false, format("An execution error occurred:%n%s", e.getMessage()));
+        }
     }
 
     private List<Map<String, Object>> computeActualResult(String statement, Exercise currentExercise) {
